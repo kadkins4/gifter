@@ -1,60 +1,55 @@
+// TODO create a userController that will handle all of these
 const express   = require('express'),
-      mongodb   = require('mongodb');
+      UserModel = require('../../models/User');
+      router    = express.Router();
 
-const router = express.Router();
+// Get All Users
+router.get('/', (req, res) => {
+  UserModel.find({})
+    .then(each => res.json(each))
+    .catch(err => console.error(err));
+});
+
+// Get User ID
+router.get('/:id', (req, res) => {
+  UserModel.findById(req.params.id)
+    .then(user => res.json(user))
+    .catch(err => console.error(err));
+})
 
 // Add User
-router.get('/', async (req, res) => {
-  const users = await loadPostsCollection();
-
-  console.log(users);
-
-  res.send(await users.find({}).toArray());
-});
-// Get User
-router.post('/', async (req, res) => {
-  const users = await loadPostsCollection();
-
-  await users.insertOne({
+router.post('/', (req, res) => {
+  UserModel.create({
     username: req.body.username,
     email: req.body.email,
-    password: req.body.password,
-    createdAt: new Date()
+    password: req.body.password
   })
+    .then(newUser => res.status(201).send(newUser))
+    .catch(err => console.error(err));
 
-  return res.status(201).send();
 
 });
 // Update User
-// router.put('/:id', async (req, res) => {
-//   const users = await loadPostsCollection();
-
-//   await users.findOneAndUpdate({
-//     username: req.body.username,
-//     password: req.body.password
-//   });
-
-//   return res.status(200).send();
-// })
+router.put('/:id', (req, res) => {
+  UserModel.findByIdAndUpdate(req.params.id, {
+    // TODO rewrite this portion to update only the fields that have changed
+    $set: {
+      username: req.body.username,
+      email: req.body.email,
+      password: req.body.password
+    }}, {
+      // returns modified
+      new: true
+    })
+    .then(user => res.status(200).send(user))
+    .catch(err => console.error(err))
+})
 
 // Delete User
-router.delete('/:id', async (req, res) => {
-  const users = await loadPostsCollection();
-
-  await users.deleteOne({_id: new mongodb.ObjectID(req.params.id)});
-
-  res.status(200).send();
-} )
-
-async function loadPostsCollection() {
-  const client = await mongodb.MongoClient.connect
-    ('mongodb://kadkins:password1@ds243345.mlab.com:43345/gifterdb', {
-      useNewUrlParser: true,
-      useUnifiedTopology: true
-    });
-
-    return client.db('gifterdb').collection('users');
-}
-
+router.delete('/:id', (req, res) => {
+  UserModel.findByIdAndDelete(req.params.id)
+    .then(removedUser => res.status(200).send(`Deleted: ${removedUser}`))
+    .catch(err => console.error(err))
+})
 
 module.exports = router;
